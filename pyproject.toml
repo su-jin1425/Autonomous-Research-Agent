@@ -1,0 +1,18 @@
+[project]
+name = "autonomous-research-agent-v2"
+version = "0.2.0"
+description = "Production-oriented autonomous research agent using FastAPI, LangGraph, vector search, PostgreSQL, Redis, and Playwright."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+ignore = ["B008"]
+
