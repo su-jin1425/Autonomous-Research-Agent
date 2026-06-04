@@ -1,4 +1,4 @@
-# Autonomous Research Agent V2
+# Autonomous Research Agent
 
 Production-oriented autonomous research backend built with FastAPI, LangGraph, LangChain, vector search, PostgreSQL, Redis, Celery, Playwright, Prometheus, and Grafana.
 
