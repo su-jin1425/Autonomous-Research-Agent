@@ -36,6 +36,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Validate imports
+        env:
+          PYTHONPATH: .
         run: |
           python -c "import app.main"
 
@@ -44,6 +46,8 @@ jobs:
           ruff check .
 
       - name: Run Tests
+        env:
+          PYTHONPATH: .
         run: |
           pytest -v
 
@@ -107,6 +111,9 @@ jobs:
 
       - name: Wait for PostgreSQL
         run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
           for i in {1..30}; do
             pg_isready -h localhost -p 5432 -U postgres && break
             sleep 2
@@ -114,6 +121,7 @@ jobs:
 
       - name: Run Alembic Migrations
         env:
+          PYTHONPATH: .
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/research_agent
         run: |
           alembic upgrade head
