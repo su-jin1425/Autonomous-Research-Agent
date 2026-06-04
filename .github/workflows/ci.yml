@@ -39,11 +39,11 @@ jobs:
         run: |
           python -c "import app.main"
 
-      - name: Lint
+      - name: Ruff Lint
         run: |
           ruff check .
 
-      - name: Run tests
+      - name: Run Tests
         run: |
           pytest -v
 
@@ -54,18 +54,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build backend image
+      - name: Build Backend Image
         run: |
-          docker build -t autonomous-research-agent .
+          docker build \
+            -t autonomous-research-agent \
+            .
 
-      - name: Build worker image
+      - name: Build Worker Image
         run: |
           docker build \
             -f docker/worker.Dockerfile \
-            -t autonomous-research-worker .
+            -t autonomous-research-worker \
+            .
 
   migration-validation:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+
+        env:
+          POSTGRES_DB: research_agent
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd="pg_isready -U postgres -d research_agent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
       - name: Checkout
@@ -76,10 +97,23 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
 
-      - name: Validate Alembic
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres && break
+            sleep 2
+          done
+
+      - name: Run Alembic Migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/research_agent
         run: |
           alembic upgrade head

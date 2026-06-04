@@ -18,11 +18,10 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 
 RUN pip install \
-    --prefix=/install \
     --no-cache-dir \
     -r requirements.txt
 
-RUN /install/bin/playwright install chromium
+RUN python -m playwright install --with-deps chromium
 
 
 FROM python:3.11-slim
@@ -43,7 +42,22 @@ RUN apt-get update \
         libgtk-3-0 \
         libgbm1 \
         libasound2 \
+        libxshmfence1 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libxfixes3 \
+        libxext6 \
+        libx11-6 \
+        libxcb1 \
+        libpango-1.0-0 \
+        libcairo2 \
+        fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local /usr/local
+
+COPY . .
 
 RUN groupadd --gid 10001 appgroup \
     && useradd \
@@ -52,13 +66,6 @@ RUN groupadd --gid 10001 appgroup \
         --create-home \
         --shell /usr/sbin/nologin \
         appuser
-
-COPY --from=builder /install /usr/local
-COPY --from=builder /root/.cache/ms-playwright /ms-playwright
-
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
-COPY . .
 
 RUN mkdir -p /app/data \
     && chown -R appuser:appgroup /app
