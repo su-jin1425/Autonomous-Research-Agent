@@ -7,10 +7,9 @@ from app.core.config import get_settings
 
 
 class RedisService:
-    _client_instance = None
-
     def __init__(self) -> None:
         self.settings = get_settings()
+
         self._memory: dict[str, tuple[int, float]] = {}
 
     async def ping(self) -> bool:
@@ -39,15 +38,23 @@ class RedisService:
                 window_seconds=window_seconds,
             )
 
-        count = await client.incr(key)
+        try:
+            count = await client.incr(key)
 
-        if count == 1:
-            await client.expire(
+            if count == 1:
+                await client.expire(
+                    key,
+                    window_seconds,
+                )
+
+            return int(count) <= limit, int(count)
+
+        except Exception:
+            return self._increment_memory(
                 key,
-                window_seconds,
+                limit=limit,
+                window_seconds=window_seconds,
             )
-
-        return int(count) <= limit, int(count)
 
     async def publish_execution_update(
         self,
@@ -59,10 +66,13 @@ class RedisService:
         if client is None:
             return
 
-        await client.publish(
-            f"research:{query_id}",
-            json.dumps(payload),
-        )
+        try:
+            await client.publish(
+                f"research:{query_id}",
+                json.dumps(payload),
+            )
+        except Exception:
+            pass
 
     async def queue_size(
         self,
@@ -73,7 +83,10 @@ class RedisService:
         if client is None:
             return 0
 
-        return int(await client.llen(queue_name))
+        try:
+            return int(await client.llen(queue_name))
+        except Exception:
+            return 0
 
     async def subscribe(
         self,
@@ -84,28 +97,29 @@ class RedisService:
         if client is None:
             return None
 
-        pubsub = client.pubsub()
+        try:
+            pubsub = client.pubsub()
 
-        await pubsub.subscribe(channel)
+            await pubsub.subscribe(channel)
 
-        return pubsub
+            return pubsub
+        except Exception:
+            return None
 
     async def client(self):
-        if RedisService._client_instance is not None:
-            return RedisService._client_instance
+        if self.settings.environment == "test":
+            return None
 
         try:
             import redis.asyncio as redis
         except ImportError:
             return None
 
-        RedisService._client_instance = redis.from_url(
+        return redis.from_url(
             self.settings.redis_url,
             encoding="utf-8",
             decode_responses=True,
         )
-
-        return RedisService._client_instance
 
     def _increment_memory(
         self,
