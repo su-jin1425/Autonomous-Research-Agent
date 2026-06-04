@@ -11,9 +11,8 @@ from app.core.config import get_settings
 ALGORITHM = "HS256"
 ISSUER = "autonomous-research-agent"
 
-
 pwd_context = CryptContext(
-    schemes=["bcrypt"],
+    schemes=["argon2"],
     deprecated="auto",
 )
 
@@ -46,8 +45,7 @@ def create_access_token(
         "iss": ISSUER,
         "iat": now,
         "nbf": now,
-        "exp": now
-        + timedelta(
+        "exp": now + timedelta(
             minutes=settings.access_token_expire_minutes,
         ),
     }
@@ -73,8 +71,7 @@ def create_refresh_token(subject: str) -> str:
         "iss": ISSUER,
         "iat": now,
         "nbf": now,
-        "exp": now
-        + timedelta(
+        "exp": now + timedelta(
             minutes=settings.refresh_token_expire_minutes,
         ),
     }
@@ -95,26 +92,11 @@ def decode_token(token: str) -> dict[str, Any]:
             settings.secret_key,
             algorithms=[ALGORITHM],
             issuer=ISSUER,
-            options={
-                "verify_signature": True,
-                "verify_exp": True,
-                "verify_iat": True,
-                "verify_nbf": True,
-                "verify_iss": True,
-                "require_sub": True,
-                "require_exp": True,
-                "require_iat": True,
-                "require_nbf": True,
-                "require_iss": True,
-            },
         )
 
         token_type = payload.get("type")
 
-        if token_type not in {
-            "access",
-            "refresh",
-        }:
+        if token_type not in {"access", "refresh"}:
             raise ValueError("Invalid token type")
 
         return payload

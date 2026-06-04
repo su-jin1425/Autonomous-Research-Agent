@@ -48,6 +48,9 @@ jobs:
       - name: Run Tests
         env:
           PYTHONPATH: .
+          ENVIRONMENT: test
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          REDIS_URL: redis://localhost:6379/0
         run: |
           pytest -v
 

@@ -100,6 +100,15 @@ class Settings(BaseSettings):
         return value
 
     @model_validator(mode="after")
+    def configure_test_environment(self):
+        if self.environment == "test":
+            self.database_url = "sqlite+aiosqlite:///./test.db"
+            self.redis_url = "redis://localhost:6379/0"
+            self.auto_create_tables = True
+
+        return self
+
+    @model_validator(mode="after")
     def validate_environment_configuration(self):
         if self.environment == "production":
             if self.secret_key == DEFAULT_SECRET_KEY:

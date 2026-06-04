@@ -25,7 +25,10 @@ APP_VERSION = "0.2.0"
 async def lifespan(app: FastAPI):
     settings = get_settings()
 
-    if settings.auto_create_tables:
+    if (
+        settings.auto_create_tables
+        and settings.environment != "test"
+    ):
         await init_db()
 
     yield
