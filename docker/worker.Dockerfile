@@ -22,9 +22,7 @@ RUN pip install \
     --no-cache-dir \
     -r requirements.txt
 
-ENV PATH="/install/bin:${PATH}"
-
-RUN python -m playwright install chromium
+RUN /install/bin/playwright install chromium
 
 
 FROM python:3.11-slim
@@ -56,6 +54,9 @@ RUN groupadd --gid 10001 appgroup \
         appuser
 
 COPY --from=builder /install /usr/local
+COPY --from=builder /root/.cache/ms-playwright /ms-playwright
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 COPY . .
 
