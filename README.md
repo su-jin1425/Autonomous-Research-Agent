@@ -1,85 +1,324 @@
 # Autonomous Research Agent
 
-Production-oriented autonomous research backend built with FastAPI, LangGraph, LangChain, vector search, PostgreSQL, Redis, Celery, Playwright, Prometheus, and Grafana.
+Autonomous Research Agent is a research intelligence platform that automates information discovery, web retrieval, source validation, semantic search, evidence synthesis, and report generation.
 
-## What V2 Implements
+The platform combines browser automation, vector search, retrieval pipelines, workflow orchestration, and language models to transform complex research questions into structured evidence-backed reports.
 
-- Auth APIs with JWT, bcrypt password hashing, and role hooks.
-- Research APIs for starting, listing, inspecting, monitoring, and deleting research jobs.
-- LangGraph workflow: query decomposition, web search, browser navigation, indexing, semantic retrieval, reasoning, validation, and report generation.
-- LangChain LLM synthesis path when `OPENAI_API_KEY` is configured, with deterministic fallback for local tests.
-- Vector search abstraction with Chroma, FAISS, and in-memory fallback.
-- PostgreSQL schema with Alembic migration for users, research queries, tasks, sources, reports, and metrics.
-- Redis-backed rate limiting, Pub/Sub execution updates, and Celery broker integration.
-- Playwright-based page navigation and BeautifulSoup extraction.
-- Prometheus metrics and Grafana provisioning.
-- Docker Compose for backend, worker, PostgreSQL, Redis, Prometheus, and Grafana.
+---
 
-## Local Setup
+## Core Capabilities
+
+### Research Workflow Automation
+
+* Multi-stage research workflows
+* Query decomposition
+* Evidence gathering
+* Source validation
+* Semantic retrieval
+* Report generation
+* Citation tracking
+
+### Web Research
+
+* Browser-based page navigation using Playwright
+* HTML content extraction
+* Document processing
+* Source ranking
+* Research evidence collection
+
+### Knowledge Base
+
+* Chroma vector storage
+* FAISS vector indexing
+* Embedding generation
+* Semantic search
+* Knowledge retrieval
+
+### Workflow Orchestration
+
+* LangGraph workflow execution
+* Multi-step research pipelines
+* Research task coordination
+* Evidence aggregation
+
+### Authentication and Security
+
+* JWT authentication
+* Password hashing with bcrypt
+* Role-based access controls
+* Rate limiting
+* Source validation
+* Browser navigation safeguards
+
+### Monitoring and Operations
+
+* Prometheus metrics
+* Grafana dashboards
+* Research execution metrics
+* Queue monitoring
+* System health endpoints
+
+---
+
+## Architecture
+
+```text
+Client
+  │
+  ▼
+FastAPI API Layer
+  │
+  ├── Authentication
+  ├── Research APIs
+  ├── Reporting APIs
+  └── Monitoring APIs
+  │
+  ▼
+Research Workflow Engine
+  │
+  ├── Query Planning
+  ├── Search
+  ├── Browser Retrieval
+  ├── Content Extraction
+  ├── Source Validation
+  ├── Vector Indexing
+  ├── Semantic Retrieval
+  └── Report Generation
+  │
+  ▼
+Storage Layer
+  │
+  ├── PostgreSQL
+  ├── Redis
+  ├── Chroma
+  └── FAISS
+```
+
+---
+
+## Technology Stack
+
+### Backend
+
+* FastAPI
+* SQLAlchemy Async
+* PostgreSQL
+* Redis
+* Celery
+
+### AI and Research
+
+* LangChain
+* LangGraph
+* Chroma
+* FAISS
+* Sentence Transformers
+
+### Retrieval
+
+* Playwright
+* BeautifulSoup
+
+### Observability
+
+* Prometheus
+* Grafana
+
+### Infrastructure
+
+* Docker
+* Docker Compose
+
+---
+
+## Local Deployment (Docker)
+
+### Prerequisites
+
+* Docker
+* Docker Compose
+
+### Setup
 
 ```bash
 cp .env.example .env
-docker-compose up --build
+docker compose up --build
 ```
 
-Services:
+### Available Services
 
-- FastAPI: `http://localhost:8000`
-- Swagger: `http://localhost:8000/docs`
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3000`
+| Service           | URL                        |
+| ----------------- | -------------------------- |
+| API               | http://localhost:8000      |
+| API Documentation | http://localhost:8000/docs |
+| Prometheus        | http://localhost:9090      |
+| Grafana           | http://localhost:3000      |
 
-## Run Locally Without Docker
+### Health Checks
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-playwright install chromium
-uvicorn app.main:app --reload
+curl http://localhost:8000/health/live
+
+curl http://localhost:8000/health/ready
 ```
 
-The default local database is SQLite. Set `DATABASE_URL` to PostgreSQL for production parity.
+---
 
-## API Flow
+## Production Deployment
 
-1. `POST /api/v1/auth/register`
-2. `POST /api/v1/auth/login`
-3. `POST /api/v1/research/start`
-4. `GET /api/v1/research/status/{query_id}`
-5. `GET /api/v1/research/{query_id}`
+### Environment Requirements
 
-## Worker Mode
+* PostgreSQL
+* Redis
+* Persistent storage
+* Reverse proxy
+* TLS termination
 
-Set `USE_CELERY=true` and run:
+### Deployment
 
 ```bash
-celery -A app.tasks.celery_app worker --loglevel=INFO -Q research
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-When `USE_CELERY=false`, FastAPI background tasks execute research jobs.
+### Recommended Production Configuration
 
-## Tests
+* Dedicated PostgreSQL instance
+* Dedicated Redis instance
+* Managed backups
+* TLS certificates
+* Centralized logging
+* External monitoring
+
+---
+
+## Database Migration
+
+Run migrations before application startup:
 
 ```bash
+alembic upgrade head
+```
+
+For production deployments:
+
+```env
+AUTO_CREATE_TABLES=false
+```
+
+---
+
+## Celery Worker
+
+Worker execution:
+
+```bash
+celery -A app.tasks.celery_app worker \
+  --loglevel=INFO \
+  --queues=research
+```
+
+---
+
+## API Overview
+
+### Authentication
+
+```http
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
+```
+
+### Research
+
+```http
+POST   /api/v1/research/start
+GET    /api/v1/research
+GET    /api/v1/research/{id}
+DELETE /api/v1/research/{id}
+```
+
+### Reports
+
+```http
+GET /api/v1/reports/{id}
+```
+
+### Monitoring
+
+```http
+GET /api/v1/monitoring/metrics
+```
+
+---
+
+## Testing
+
+Run all tests:
+
+```bash
+pytest
+```
+
+Static analysis:
+
+```bash
+ruff check .
+```
+
+---
+
+## Monitoring
+
+### Prometheus
+
+Metrics collection:
+
+```text
+Research execution metrics
+API metrics
+Queue metrics
+System health metrics
+```
+
+### Grafana
+
+Dashboards provide visibility into:
+
+```text
+Research activity
+Execution performance
+Queue status
+Application health
+```
+
+---
+
+## Security
+
+Implemented protections include:
+
+* Password hashing
+* JWT authentication
+* Role validation
+* Rate limiting
+* Source validation
+* Browser navigation restrictions
+* SSRF protection
+* Environment validation
+
+---
+
+## Development Workflow
+
+```bash
+docker compose up --build
 pytest
 ruff check .
 ```
 
-## Benchmarking
+---
 
-The 60% efficiency improvement claim is not asserted by this repository until benchmark data exists. See `docs/BENCHMARKING.md`.
+## Project Goal
 
-```bash
-python benchmarks/retrieval_benchmark.py --iterations 50
-```
-
-## Production Notes
-
-- Replace `SECRET_KEY`.
-- Use managed PostgreSQL and Redis.
-- Set `AUTO_CREATE_TABLES=false` and run Alembic migrations.
-- Enable Celery workers for long-running research.
-- Add authenticated access or network-level protection for `/api/v1/monitoring/metrics` in production.
-- Add browser e2e tests against known fixture pages before claiming dynamic-site coverage.
-
+The platform is designed to automate research workflows by combining web retrieval, semantic search, evidence synthesis, and workflow orchestration into a single research intelligence system.

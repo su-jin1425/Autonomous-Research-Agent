@@ -3,52 +3,140 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     env_file:
       - .env
+
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      USE_CELERY: "true"
+      AUTO_CREATE_TABLES: "false"
+
     restart: unless-stopped
+
     ports:
       - "8000:8000"
+
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8000/health/live"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    volumes:
+      - research_data:/app/data
 
   worker:
     build:
       context: .
       dockerfile: docker/worker.Dockerfile
+
     env_file:
       - .env
+
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      USE_CELERY: "true"
+
     restart: unless-stopped
+
     depends_on:
-      - db
-      - redis
+      backend:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    volumes:
+      - research_data:/app/data
 
   db:
     image: postgres:16-alpine
+
     restart: unless-stopped
+
     environment:
-      POSTGRES_DB: research_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7-alpine
+
     restart: unless-stopped
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   prometheus:
     image: prom/prometheus:v2.55.1
+
     restart: unless-stopped
+
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+    depends_on:
+      backend:
+        condition: service_healthy
 
   grafana:
     image: grafana/grafana:11.4.0
+
     restart: unless-stopped
+
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+
+    depends_on:
+      prometheus:
+        condition: service_started
 
 volumes:
   postgres_data:
-
+  grafana_data:
+  prometheus_data:
+  research_data:
