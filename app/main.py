@@ -16,6 +16,7 @@ from app.api.routes import (
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import engine, init_db
+from app.middleware.metrics import MetricsMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 
 APP_VERSION = "0.2.0"
@@ -54,6 +55,10 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    app.add_middleware(
+        MetricsMiddleware,
     )
 
     app.add_middleware(

@@ -7,6 +7,7 @@ from starlette.responses import Response
 from app.api.deps import db_session, require_roles
 from app.core.config import get_settings
 from app.models.user import User
+from app.monitoring.metrics import DATABASE_CONNECTIONS, REDIS_QUEUE_SIZE
 from app.repositories.research_repository import ResearchRepository
 from app.schemas.monitoring import HealthResponse, MetricsResponse
 from app.services.redis_service import RedisService
@@ -19,16 +20,29 @@ async def health(session: AsyncSession = Depends(db_session)) -> HealthResponse:
     settings = get_settings()
     database = "ok"
     redis_status = "ok"
+
     try:
         await session.execute(text("SELECT 1"))
+        DATABASE_CONNECTIONS.set(1)
     except Exception:
         database = "error"
+        DATABASE_CONNECTIONS.set(0)
+
     try:
-        await RedisService().ping()
+        redis_service = RedisService()
+        await redis_service.ping()
+        REDIS_QUEUE_SIZE.set(await redis_service.queue_size())
     except Exception:
         redis_status = "error"
+        REDIS_QUEUE_SIZE.set(0)
+
     status = "ok" if database == "ok" and redis_status == "ok" else "degraded"
-    return HealthResponse(status=status, environment=settings.environment, database=database, redis=redis_status)
+    return HealthResponse(
+        status=status,
+        environment=settings.environment,
+        database=database,
+        redis=redis_status,
+    )
 
 
 @router.get("/metrics")

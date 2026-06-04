@@ -1,3 +1,4 @@
+from app.monitoring.metrics import VECTORSTORE_SIZE
 from app.retrieval.chunking import TextChunker
 from app.retrieval.documents import RetrievedDocument
 from app.vectorstore.base import VectorHit, VectorStore
@@ -18,7 +19,9 @@ class KnowledgeBaseService:
         if not chunks:
             return []
         vectors = self.embeddings.embed([chunk.text for chunk in chunks])
-        return await self.vector_store.add(chunks, vectors)
+        chunk_ids = await self.vector_store.add(chunks, vectors)
+        VECTORSTORE_SIZE.inc(len(chunk_ids))
+        return chunk_ids
 
     async def semantic_search(self, query: str, limit: int = 5) -> list[VectorHit]:
         query_embedding = self.embeddings.embed([query])[0]

@@ -14,14 +14,15 @@ services:
     ports:
       - "8000:8000"
 
+    volumes:
+      - ./data:/app/data
+
     depends_on:
       db:
         condition: service_healthy
+
       redis:
         condition: service_healthy
-
-    volumes:
-      - ./data:/app/data
 
     healthcheck:
       test:
@@ -51,16 +52,18 @@ services:
       REDIS_URL: ${REDIS_URL}
       USE_CELERY: "true"
 
+    volumes:
+      - ./data:/app/data
+
     depends_on:
       backend:
         condition: service_healthy
+
       db:
         condition: service_healthy
+
       redis:
         condition: service_healthy
-
-    volumes:
-      - ./data:/app/data
 
     restart: unless-stopped
 
@@ -117,6 +120,7 @@ services:
 
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
 
     depends_on:
       backend:
@@ -141,6 +145,53 @@ services:
 
     restart: unless-stopped
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+
+    ports:
+      - "9187:9187"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+
+    environment:
+      REDIS_ADDR: redis://redis:6379
+
+    ports:
+      - "9121:9121"
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
+    privileged: true
+
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   grafana_data:
+  prometheus_data:

@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.security import decode_token
+from app.core.security import decode_access_token
 from app.db.session import get_session
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
@@ -29,7 +29,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = decode_token(token)
+        payload = decode_access_token(token)
     except ValueError as exc:
         raise credentials_error from exc
 

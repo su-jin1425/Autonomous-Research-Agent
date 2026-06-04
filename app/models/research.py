@@ -17,11 +17,23 @@ class ResearchQuery(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    user = relationship("User", back_populates="research_queries")
-    tasks = relationship("ResearchTask", back_populates="query", cascade="all, delete-orphan")
-    sources = relationship("ResearchSource", back_populates="query", cascade="all, delete-orphan")
-    report = relationship("ResearchReport", back_populates="query", uselist=False, cascade="all, delete-orphan")
-    metrics = relationship("ExecutionMetric", back_populates="query", uselist=False, cascade="all, delete-orphan")
+    user = relationship("User", back_populates="research_queries", lazy="selectin")
+    tasks = relationship("ResearchTask", back_populates="query", cascade="all, delete-orphan", lazy="selectin")
+    sources = relationship("ResearchSource", back_populates="query", cascade="all, delete-orphan", lazy="selectin")
+    report = relationship(
+        "ResearchReport",
+        back_populates="query",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    metrics = relationship(
+        "ExecutionMetric",
+        back_populates="query",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
 
 class ResearchTask(Base):
@@ -35,7 +47,7 @@ class ResearchTask(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    query = relationship("ResearchQuery", back_populates="tasks")
+    query = relationship("ResearchQuery", back_populates="tasks", lazy="selectin")
 
 
 class ResearchSource(Base):
@@ -49,7 +61,7 @@ class ResearchSource(Base):
     embedding_reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
     quality_score: Mapped[float] = mapped_column(Float, default=0.0)
 
-    query = relationship("ResearchQuery", back_populates="sources")
+    query = relationship("ResearchQuery", back_populates="sources", lazy="selectin")
 
 
 class ResearchReport(Base):
@@ -63,7 +75,7 @@ class ResearchReport(Base):
     generated_summary: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    query = relationship("ResearchQuery", back_populates="report")
+    query = relationship("ResearchQuery", back_populates="report", lazy="selectin")
 
 
 class ExecutionMetric(Base):
@@ -78,4 +90,4 @@ class ExecutionMetric(Base):
     retrieval_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    query = relationship("ResearchQuery", back_populates="metrics")
+    query = relationship("ResearchQuery", back_populates="metrics", lazy="selectin")

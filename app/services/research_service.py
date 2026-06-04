@@ -4,7 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
 from app.models.research import ResearchQuery
-from app.monitoring.metrics import RESEARCH_LATENCY, RESEARCH_RUNS, RETRIEVAL_COUNT
+from app.monitoring.metrics import (
+    ACTIVE_RESEARCH_JOBS,
+    FAILED_RESEARCH_JOBS,
+    REPORTS_GENERATED,
+    RESEARCH_LATENCY,
+    RESEARCH_RUNS,
+    RETRIEVAL_COUNT,
+)
 from app.repositories.research_repository import ResearchRepository
 from app.schemas.research import ResearchStartRequest
 from app.services.redis_service import RedisService
@@ -46,16 +53,17 @@ async def execute_research_job(query_id: str, *, max_sources: int, max_depth: in
     async with AsyncSessionLocal() as session:
         repository = ResearchRepository(session)
         start_time = perf_counter()
-        await repository.update_status(query_id, "running")
-        await repository.add_task(query_id=query_id, task_type="workflow", status="running")
-        await session.commit()
-        await redis.publish_execution_update(query_id, {"status": "running"})
-
-        research = await repository.get_query(query_id)
-        if research is None:
-            return
-
+        ACTIVE_RESEARCH_JOBS.inc()
         try:
+            await repository.update_status(query_id, "running")
+            await repository.add_task(query_id=query_id, task_type="workflow", status="running")
+            await session.commit()
+            await redis.publish_execution_update(query_id, {"status": "running"})
+
+            research = await repository.get_query(query_id)
+            if research is None:
+                return
+
             workflow = ResearchWorkflow()
             with RESEARCH_LATENCY.time():
                 state = await workflow.run(query=research.query, max_sources=max_sources, max_depth=max_depth)
@@ -76,6 +84,7 @@ async def execute_research_job(query_id: str, *, max_sources: int, max_depth: in
                 payload=report,
                 summary=str(report.get("executive_summary", "")),
             )
+            REPORTS_GENERATED.inc()
             await repository.save_metrics(
                 query_id=query_id,
                 execution_time=perf_counter() - start_time,
@@ -89,6 +98,7 @@ async def execute_research_job(query_id: str, *, max_sources: int, max_depth: in
             RETRIEVAL_COUNT.inc(len(documents))
             await redis.publish_execution_update(query_id, {"status": "completed"})
         except Exception as exc:
+            FAILED_RESEARCH_JOBS.inc()
             await repository.add_task(
                 query_id=query_id, task_type="workflow", status="failed", logs={"error": str(exc)}
             )
@@ -96,3 +106,5 @@ async def execute_research_job(query_id: str, *, max_sources: int, max_depth: in
             await session.commit()
             RESEARCH_RUNS.labels(status="failed").inc()
             await redis.publish_execution_update(query_id, {"status": "failed", "error": str(exc)})
+        finally:
+            ACTIVE_RESEARCH_JOBS.dec()

@@ -87,7 +87,7 @@ async def refresh_token() -> dict[str, str]:
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail=(
             "Refresh token rotation has not yet been implemented. "
-            "Version 2 will introduce server-side session tracking."
+            "Server-side session tracking will be added in a future release."
         ),
     )
 
@@ -99,5 +99,5 @@ async def refresh_token() -> dict[str, str]:
 async def logout() -> dict[str, str]:
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail=("Logout is not yet implemented. Version 2 will introduce refresh-token revocation."),
+        detail=("Logout is not yet implemented. Refresh-token revocation will be added in a future release."),
     )

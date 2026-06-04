@@ -14,7 +14,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Autonomous Research Agent V2"
+    app_name: str = "Autonomous Research Agent"
 
     environment: Literal[
         "local",

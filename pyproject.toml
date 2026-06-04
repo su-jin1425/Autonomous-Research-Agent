@@ -1,5 +1,5 @@
 [project]
-name = "autonomous-research-agent-v2"
+name = "autonomous-research-agent"
 version = "0.2.0"
 description = "Production-oriented autonomous research agent using FastAPI, LangGraph, vector search, PostgreSQL, Redis, and Playwright."
 requires-python = ">=3.11"

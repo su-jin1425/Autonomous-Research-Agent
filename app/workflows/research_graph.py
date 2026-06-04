@@ -7,6 +7,7 @@ from collections.abc import Awaitable, Callable
 from app.agents.planner import ResearchPlanner
 from app.agents.reasoning import ReasoningAgent
 from app.core.config import get_settings
+from app.monitoring.metrics import SOURCE_VALIDATION_SCORE
 from app.retrieval.browser import BrowserNavigationError, PlaywrightBrowser
 from app.retrieval.documents import RetrievedDocument
 from app.retrieval.search import WebSearchClient
@@ -230,6 +231,7 @@ class ResearchWorkflow:
 
         for document in documents:
             document.score = self.validator.score(document)
+            SOURCE_VALIDATION_SCORE.observe(document.score)
 
         state["browsed_documents"] = sorted(
             documents,

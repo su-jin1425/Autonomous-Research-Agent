@@ -1,1 +1,1 @@
-"""Autonomous Research Agent V2 application package."""
+"""Autonomous Research Agent application package."""

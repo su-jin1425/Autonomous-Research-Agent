@@ -23,6 +23,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
       redis:
         condition: service_healthy
 
@@ -41,6 +42,9 @@ services:
 
     volumes:
       - research_data:/app/data
+
+    networks:
+      - research_network
 
   worker:
     build:
@@ -62,13 +66,18 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
       db:
         condition: service_healthy
+
       redis:
         condition: service_healthy
 
     volumes:
       - research_data:/app/data
+
+    networks:
+      - research_network
 
   db:
     image: postgres:16-alpine
@@ -93,6 +102,9 @@ services:
       timeout: 5s
       retries: 10
 
+    networks:
+      - research_network
+
   redis:
     image: redis:7-alpine
 
@@ -109,10 +121,16 @@ services:
       timeout: 5s
       retries: 10
 
+    networks:
+      - research_network
+
   prometheus:
     image: prom/prometheus:v2.55.1
 
     restart: unless-stopped
+
+    ports:
+      - "9090:9090"
 
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -122,10 +140,20 @@ services:
       backend:
         condition: service_healthy
 
+    networks:
+      - research_network
+
   grafana:
     image: grafana/grafana:11.4.0
 
     restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
 
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -136,8 +164,70 @@ services:
       prometheus:
         condition: service_started
 
+    networks:
+      - research_network
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+
+    restart: unless-stopped
+
+    ports:
+      - "9187:9187"
+
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - research_network
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+
+    restart: unless-stopped
+
+    ports:
+      - "9121:9121"
+
+    environment:
+      REDIS_ADDR: redis://redis:6379
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    networks:
+      - research_network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    privileged: true
+
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
+    networks:
+      - research_network
+
 volumes:
   postgres_data:
-  grafana_data:
   prometheus_data:
+  grafana_data:
   research_data:
+
+networks:
+  research_network:
+    driver: bridge

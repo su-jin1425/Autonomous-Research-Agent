@@ -2,7 +2,7 @@
 
 Autonomous Research Agent is a research intelligence platform that automates information discovery, web retrieval, source validation, semantic search, evidence synthesis, and report generation.
 
-The platform combines browser automation, vector search, retrieval pipelines, workflow orchestration, and language models to transform complex research questions into structured evidence-backed reports.
+The system combines browser automation, vector search, retrieval pipelines, workflow orchestration, and language models to transform complex research questions into structured, evidence-backed reports.
 
 ---
 
@@ -62,36 +62,27 @@ The platform combines browser automation, vector search, retrieval pipelines, wo
 
 ## Architecture
 
-```text
-Client
-  │
-  ▼
-FastAPI API Layer
-  │
-  ├── Authentication
-  ├── Research APIs
-  ├── Reporting APIs
-  └── Monitoring APIs
-  │
-  ▼
-Research Workflow Engine
-  │
-  ├── Query Planning
-  ├── Search
-  ├── Browser Retrieval
-  ├── Content Extraction
-  ├── Source Validation
-  ├── Vector Indexing
-  ├── Semantic Retrieval
-  └── Report Generation
-  │
-  ▼
-Storage Layer
-  │
-  ├── PostgreSQL
-  ├── Redis
-  ├── Chroma
-  └── FAISS
+```mermaid
+flowchart TD
+  Client --> API[FastAPI API Layer]
+  API --> Auth[Authentication]
+  API --> Research[Research APIs]
+  API --> Reports[Reporting APIs]
+  API --> Monitoring[Monitoring APIs]
+  API --> Workflow[Research Workflow Engine]
+  Workflow --> Planning[Query Planning]
+  Workflow --> Search[Search]
+  Workflow --> Browser[Browser Retrieval]
+  Workflow --> Extraction[Content Extraction]
+  Workflow --> Validation[Source Validation]
+  Workflow --> VectorIndex[Vector Indexing]
+  Workflow --> Retrieval[Semantic Retrieval]
+  Workflow --> Reporting[Report Generation]
+  Workflow --> Storage[Storage Layer]
+  Storage --> PostgreSQL[PostgreSQL]
+  Storage --> Redis[Redis]
+  Storage --> Chroma[Chroma]
+  Storage --> FAISS[FAISS]
 ```
 
 ---
@@ -147,19 +138,20 @@ docker compose up --build
 
 ### Available Services
 
-| Service           | URL                        |
-| ----------------- | -------------------------- |
-| API               | http://localhost:8000      |
+| Service           | URL                       |
+| ----------------- | ------------------------- |
+| API               | http://localhost:8000     |
 | API Documentation | http://localhost:8000/docs |
-| Prometheus        | http://localhost:9090      |
-| Grafana           | http://localhost:3000      |
+| Prometheus        | http://localhost:9090     |
+| Grafana           | http://localhost:3000     |
 
 ### Health Checks
 
 ```bash
 curl http://localhost:8000/health/live
-
 curl http://localhost:8000/health/ready
+curl http://localhost:8000/api/v1/monitoring/health
+curl http://localhost:8000/api/v1/monitoring/metrics
 ```
 
 ---
@@ -242,12 +234,15 @@ DELETE /api/v1/research/{id}
 
 ```http
 GET /api/v1/reports/{id}
+POST /api/v1/reports/export
 ```
 
 ### Monitoring
 
 ```http
+GET /api/v1/monitoring/health
 GET /api/v1/monitoring/metrics
+GET /api/v1/monitoring/executions
 ```
 
 ---
@@ -257,13 +252,13 @@ GET /api/v1/monitoring/metrics
 Run all tests:
 
 ```bash
-pytest
+python -m pytest
 ```
 
 Static analysis:
 
 ```bash
-ruff check .
+python -m ruff check .
 ```
 
 ---
@@ -272,25 +267,23 @@ ruff check .
 
 ### Prometheus
 
-Metrics collection:
+Metrics collection includes:
 
-```text
-Research execution metrics
-API metrics
-Queue metrics
-System health metrics
-```
+* API request counts and durations
+* API error counts
+* Research workflow execution metrics
+* Queue monitoring
+* Database health metrics
+* Redis health metrics
 
 ### Grafana
 
 Dashboards provide visibility into:
 
-```text
-Research activity
-Execution performance
-Queue status
-Application health
-```
+* Research activity
+* Execution performance
+* Queue status
+* Application health
 
 ---
 
@@ -313,8 +306,8 @@ Implemented protections include:
 
 ```bash
 docker compose up --build
-pytest
-ruff check .
+python -m pytest
+python -m ruff check .
 ```
 
 ---

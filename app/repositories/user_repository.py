@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
+from app.monitoring.metrics import DATABASE_QUERY_DURATION
 
 
 class UserRepository:
@@ -12,11 +13,13 @@ class UserRepository:
         return await self.session.get(User, user_id)
 
     async def get_by_email(self, email: str) -> User | None:
-        result = await self.session.execute(select(User).where(User.email == email.lower()))
+        with DATABASE_QUERY_DURATION.time():
+            result = await self.session.execute(select(User).where(User.email == email.lower()))
         return result.scalar_one_or_none()
 
     async def create(self, *, name: str, email: str, password_hash: str, role: str) -> User:
         user = User(name=name, email=email.lower(), password_hash=password_hash, role=role)
         self.session.add(user)
-        await self.session.flush()
+        with DATABASE_QUERY_DURATION.time():
+            await self.session.flush()
         return user

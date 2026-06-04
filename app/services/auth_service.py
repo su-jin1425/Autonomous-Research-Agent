@@ -9,6 +9,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models.user import User
+from app.monitoring.metrics import AUTH_LOGINS, AUTH_REGISTRATIONS
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 
@@ -56,6 +57,7 @@ class AuthService:
         )
 
         await self.session.commit()
+        AUTH_REGISTRATIONS.inc()
 
         return user
 
@@ -84,6 +86,8 @@ class AuthService:
         refresh_token = create_refresh_token(
             user.id,
         )
+
+        AUTH_LOGINS.inc()
 
         return TokenResponse(
             access_token=access_token,

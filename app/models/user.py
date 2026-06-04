@@ -17,4 +17,9 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(32), default="researcher", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    research_queries = relationship("ResearchQuery", back_populates="user", cascade="all, delete-orphan")
+    research_queries = relationship(
+        "ResearchQuery",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
