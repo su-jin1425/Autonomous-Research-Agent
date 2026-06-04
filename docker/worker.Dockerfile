@@ -55,12 +55,4 @@ RUN mkdir -p /app/data \
 
 USER appuser
 
-CMD [
-    "celery",
-    "-A",
-    "app.tasks.celery_app",
-    "worker",
-    "--loglevel=INFO",
-    "--queues=research",
-    "--concurrency=2"
-]
+CMD ["celery","-A","app.tasks.celery_app","worker","--loglevel=INFO","--queues=research","--concurrency=2"]
