@@ -18,6 +18,10 @@ jobs:
         python-version:
           - "3.11"
 
+    env:
+      ENVIRONMENT: test
+      PYTHONPATH: .
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,33 +40,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Validate imports
-        env:
-          PYTHONPATH: .
-          ENVIRONMENT: test
-          DATABASE_URL: sqlite+aiosqlite:///./test.db
-          REDIS_URL: redis://localhost:6379/0
         run: |
           python -c "import app.main"
-
-      - name: Initialize Database
-        env:
-          PYTHONPATH: .
-          ENVIRONMENT: test
-          DATABASE_URL: sqlite+aiosqlite:///./test.db
-          REDIS_URL: redis://localhost:6379/0
-        run: |
-          python -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"
 
       - name: Ruff Lint
         run: |
           ruff check .
 
       - name: Run Tests
-        env:
-          PYTHONPATH: .
-          ENVIRONMENT: test
-          DATABASE_URL: sqlite+aiosqlite:///./test.db
-          REDIS_URL: redis://localhost:6379/0
         run: |
           pytest -v
 
@@ -94,7 +79,7 @@ jobs:
         image: postgres:16
 
         env:
-          POSTGRES_DB: research_db
+          POSTGRES_DB: research_agent
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
 
@@ -102,7 +87,7 @@ jobs:
           - 5432:5432
 
         options: >-
-          --health-cmd="pg_isready -U postgres -d research_db"
+          --health-cmd="pg_isready -U postgres -d research_agent"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -124,29 +109,20 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Install PostgreSQL Client
+      - name: Wait for PostgreSQL
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
-      - name: Wait for PostgreSQL
-        env:
-          PGPASSWORD: postgres
-        run: |
           for i in {1..30}; do
-            pg_isready \
-              -h localhost \
-              -p 5432 \
-              -U postgres \
-              -d research_db && break
-
+            pg_isready -h localhost -p 5432 -U postgres && break
             sleep 2
           done
 
       - name: Run Alembic Migrations
         env:
+          ENVIRONMENT: local
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/research_agent
           PYTHONPATH: .
-          ENVIRONMENT: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/research_db
         run: |
           alembic upgrade head

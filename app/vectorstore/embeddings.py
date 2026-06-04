@@ -36,7 +36,8 @@ class EmbeddingProvider:
             from sentence_transformers import SentenceTransformer
 
             self._model = SentenceTransformer(
-                self.settings.embedding_model
+                self.settings.embedding_model,
+                local_files_only=True,
             )
 
             return self._model
