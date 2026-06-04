@@ -7,7 +7,6 @@ from time import perf_counter
 from app.retrieval.documents import RetrievedDocument
 from app.services.knowledge_base import KnowledgeBaseService
 
-
 FIXTURES = [
     RetrievedDocument(
         url="https://example.com/fastapi",
@@ -66,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

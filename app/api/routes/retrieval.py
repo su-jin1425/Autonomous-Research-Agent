@@ -5,7 +5,6 @@ from app.models.user import User
 from app.retrieval.search import WebSearchClient
 from app.schemas.retrieval import RetrievalHit, RetrievalSearchRequest, RetrievalSearchResponse
 
-
 router = APIRouter(prefix="/retrieval", tags=["retrieval"])
 
 
@@ -27,4 +26,3 @@ async def search_retrieval(
 @router.get("/history")
 async def retrieval_history(_: User = Depends(get_current_user)) -> dict[str, list]:
     return {"history": []}
-

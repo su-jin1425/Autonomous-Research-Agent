@@ -13,4 +13,3 @@ def test_source_validator_scores_https_structured_source_higher() -> None:
     )
 
     assert validator.score(strong) > validator.score(weak)
-

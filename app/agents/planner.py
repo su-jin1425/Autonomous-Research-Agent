@@ -21,9 +21,7 @@ class ResearchPlanner:
             query,
         ).strip()
 
-        sub_questions = self._generate_sub_questions(
-            normalized
-        )
+        sub_questions = self._generate_sub_questions(normalized)
 
         search_tasks = self._generate_search_tasks(
             normalized,

@@ -14,11 +14,9 @@ class VectorHit:
 
 
 class VectorStore(Protocol):
-    async def add(self, chunks: list[DocumentChunk], embeddings: list[list[float]]) -> list[str]:
-        ...
+    async def add(self, chunks: list[DocumentChunk], embeddings: list[list[float]]) -> list[str]: ...
 
-    async def search(self, query_embedding: list[float], limit: int = 5) -> list[VectorHit]:
-        ...
+    async def search(self, query_embedding: list[float], limit: int = 5) -> list[VectorHit]: ...
 
 
 class InMemoryVectorStore:
@@ -48,4 +46,3 @@ def _cosine_similarity(left: list[float], right: list[float]) -> float:
     left_norm = sqrt(sum(a * a for a in left)) or 1.0
     right_norm = sqrt(sum(b * b for b in right)) or 1.0
     return dot / (left_norm * right_norm)
-

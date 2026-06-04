@@ -48,4 +48,3 @@ class ChromaVectorStore:
                 )
             )
         return hits
-

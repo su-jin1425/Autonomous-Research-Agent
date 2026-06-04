@@ -44,9 +44,7 @@ class AuthService:
         existing = await self.users.get_by_email(email)
 
         if existing:
-            raise DuplicateUserError(
-                "A user with this email already exists"
-            )
+            raise DuplicateUserError("A user with this email already exists")
 
         role = self._resolve_registration_role(request)
 
@@ -69,16 +67,11 @@ class AuthService:
 
         user = await self.users.get_by_email(email)
 
-        if (
-            user is None
-            or not verify_password(
-                request.password,
-                user.password_hash,
-            )
+        if user is None or not verify_password(
+            request.password,
+            user.password_hash,
         ):
-            raise AuthenticationError(
-                "Invalid email or password"
-            )
+            raise AuthenticationError("Invalid email or password")
 
         access_token = create_access_token(
             user.id,
@@ -101,11 +94,7 @@ class AuthService:
         self,
         request: RegisterRequest,
     ) -> str:
-        requested_role = (
-            request.role.lower().strip()
-            if request.role
-            else self.DEFAULT_REGISTRATION_ROLE
-        )
+        requested_role = request.role.lower().strip() if request.role else self.DEFAULT_REGISTRATION_ROLE
 
         allowed_public_roles = {
             "researcher",

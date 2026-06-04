@@ -7,7 +7,6 @@ from app.repositories.research_repository import ResearchRepository
 from app.schemas.report import ReportExportRequest, ReportExportResponse
 from app.schemas.research import ResearchReportResponse
 
-
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
@@ -37,10 +36,11 @@ async def export_report(
     else:
         payload = report.report_payload
         findings = payload.get("key_findings", [])
-        lines = [f"# Research Report", "", report.generated_summary, "", "## Key Findings"]
+        lines = ["# Research Report", "", report.generated_summary, "", "## Key Findings"]
         lines.extend(f"- {item}" if isinstance(item, str) else f"- {item.get('finding', '')}" for item in findings)
         lines.extend(["", "## Citations"])
-        lines.extend(f"- {citation.get('title', '')}: {citation.get('url', '')}" for citation in payload.get("citations", []))
+        lines.extend(
+            f"- {citation.get('title', '')}: {citation.get('url', '')}" for citation in payload.get("citations", [])
+        )
         content = "\n".join(lines)
     return ReportExportResponse(report_id=report.id, format=request.format, content=content)
-

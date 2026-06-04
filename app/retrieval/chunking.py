@@ -19,7 +19,7 @@ class TextChunker:
         while start < len(text):
             end = min(start + self.chunk_size, len(text))
             chunk_text = text[start:end]
-            chunk_id = sha256(f"{document.url}:{start}:{chunk_text}".encode("utf-8")).hexdigest()
+            chunk_id = sha256(f"{document.url}:{start}:{chunk_text}".encode()).hexdigest()
             chunks.append(
                 DocumentChunk(
                     id=chunk_id,
@@ -36,4 +36,3 @@ class TextChunker:
                 break
             start = max(0, end - self.overlap)
         return chunks
-

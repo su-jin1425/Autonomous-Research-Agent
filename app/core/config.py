@@ -4,7 +4,6 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 DEFAULT_SECRET_KEY = "local-development-secret-key-32chars"
 
 
@@ -76,52 +75,38 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
-            return [
-                origin.strip()
-                for origin in value.split(",")
-                if origin.strip()
-            ]
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
 
     @field_validator("access_token_expire_minutes")
     @classmethod
     def validate_access_expiry(cls, value: int) -> int:
         if value <= 0:
-            raise ValueError(
-                "access_token_expire_minutes must be greater than zero"
-            )
+            raise ValueError("access_token_expire_minutes must be greater than zero")
         return value
 
     @field_validator("refresh_token_expire_minutes")
     @classmethod
     def validate_refresh_expiry(cls, value: int) -> int:
         if value <= 0:
-            raise ValueError(
-                "refresh_token_expire_minutes must be greater than zero"
-            )
+            raise ValueError("refresh_token_expire_minutes must be greater than zero")
         return value
 
     @field_validator("redis_url")
     @classmethod
     def validate_redis_url(cls, value: str) -> str:
         if not value.startswith(("redis://", "rediss://")):
-            raise ValueError(
-                "redis_url must use redis:// or rediss://"
-            )
+            raise ValueError("redis_url must use redis:// or rediss://")
         return value
 
     @model_validator(mode="after")
     def validate_environment_configuration(self):
         if self.environment == "production":
             if self.secret_key == DEFAULT_SECRET_KEY:
-                raise ValueError(
-                    "Production requires a custom SECRET_KEY"
-                )
+                raise ValueError("Production requires a custom SECRET_KEY")
 
             if "sqlite" in self.database_url.lower():
-                raise ValueError(
-                    "SQLite is not permitted in production"
-                )
+                raise ValueError("SQLite is not permitted in production")
 
         return self
 

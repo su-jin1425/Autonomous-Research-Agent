@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, JSON, String, Text, func
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -56,7 +56,9 @@ class ResearchReport(Base):
     __tablename__ = "research_reports"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    query_id: Mapped[str] = mapped_column(ForeignKey("research_queries.id", ondelete="CASCADE"), unique=True, index=True)
+    query_id: Mapped[str] = mapped_column(
+        ForeignKey("research_queries.id", ondelete="CASCADE"), unique=True, index=True
+    )
     report_payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     generated_summary: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -68,11 +70,12 @@ class ExecutionMetric(Base):
     __tablename__ = "execution_metrics"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    query_id: Mapped[str] = mapped_column(ForeignKey("research_queries.id", ondelete="CASCADE"), unique=True, index=True)
+    query_id: Mapped[str] = mapped_column(
+        ForeignKey("research_queries.id", ondelete="CASCADE"), unique=True, index=True
+    )
     execution_time: Mapped[float] = mapped_column(Float, default=0.0)
     token_usage: Mapped[int] = mapped_column(Integer, default=0)
     retrieval_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     query = relationship("ResearchQuery", back_populates="metrics")
-

@@ -16,4 +16,3 @@ class RetrievalHit(BaseModel):
 class RetrievalSearchResponse(BaseModel):
     query: str
     results: list[RetrievalHit]
-

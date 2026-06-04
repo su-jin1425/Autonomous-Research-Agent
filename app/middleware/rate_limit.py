@@ -28,4 +28,3 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Rate limit exceeded", "requests": count},
             )
         return await call_next(request)
-

@@ -23,4 +23,3 @@ class KnowledgeBaseService:
     async def semantic_search(self, query: str, limit: int = 5) -> list[VectorHit]:
         query_embedding = self.embeddings.embed([query])[0]
         return await self.vector_store.search(query_embedding, limit=limit)
-

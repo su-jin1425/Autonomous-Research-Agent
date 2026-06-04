@@ -3,12 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 
-from fastapi import APIRouter
-from fastapi import WebSocket
-from fastapi import WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.services.redis_service import RedisService
-
 
 router = APIRouter(
     prefix="/research",
@@ -25,9 +22,7 @@ async def research_updates(
 
     redis_service = RedisService()
 
-    pubsub = await redis_service.subscribe(
-        f"research:{query_id}"
-    )
+    pubsub = await redis_service.subscribe(f"research:{query_id}")
 
     if pubsub is None:
         await websocket.send_json(
@@ -52,9 +47,7 @@ async def research_updates(
             )
 
             if message:
-                payload = json.loads(
-                    message["data"]
-                )
+                payload = json.loads(message["data"])
 
                 await websocket.send_json(
                     {
@@ -75,8 +68,6 @@ async def research_updates(
         pass
 
     finally:
-        await pubsub.unsubscribe(
-            f"research:{query_id}"
-        )
+        await pubsub.unsubscribe(f"research:{query_id}")
 
         await pubsub.close()

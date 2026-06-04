@@ -3,7 +3,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-
 Role = Literal["admin", "researcher", "analyst", "viewer"]
 
 
@@ -33,4 +32,3 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: Role
     created_at: datetime
-

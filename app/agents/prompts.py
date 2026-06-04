@@ -21,8 +21,6 @@ RESEARCH_SYNTHESIS_PROMPT = PromptTemplate(
 QUERY_DECOMPOSITION_PROMPT = PromptTemplate(
     name="query_decomposition",
     template=(
-        "Break the research question into focused search tasks. "
-        "Question: {query}\nReturn short search tasks only."
+        "Break the research question into focused search tasks. Question: {query}\nReturn short search tasks only."
     ),
 )
-

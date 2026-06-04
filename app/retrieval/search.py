@@ -9,7 +9,6 @@ import httpx
 from app.retrieval.documents import RetrievedDocument
 from app.retrieval.extractor import HtmlContentExtractor
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -52,12 +51,7 @@ class DuckDuckGoProvider(SearchProvider):
 
         url = f"https://duckduckgo.com/html/?{params}"
 
-        headers = {
-            "User-Agent": (
-                "AutonomousResearchAgent/1.0 "
-                "(Research Retrieval Engine)"
-            )
-        }
+        headers = {"User-Agent": ("AutonomousResearchAgent/1.0 (Research Retrieval Engine)")}
 
         try:
             async with httpx.AsyncClient(
@@ -72,9 +66,7 @@ class DuckDuckGoProvider(SearchProvider):
                 response.raise_for_status()
 
         except Exception as exc:
-            raise SearchProviderError(
-                f"DuckDuckGo search failed: {exc}"
-            ) from exc
+            raise SearchProviderError(f"DuckDuckGo search failed: {exc}") from exc
 
         links = self._extract_result_links(
             response.text,
@@ -135,19 +127,12 @@ class DuckDuckGoProvider(SearchProvider):
         results: list[dict[str, str]] = []
 
         for result in soup.select(".result"):
-            anchor = result.select_one(
-                ".result__a"
-            )
+            anchor = result.select_one(".result__a")
 
-            if (
-                not anchor
-                or not anchor.get("href")
-            ):
+            if not anchor or not anchor.get("href"):
                 continue
 
-            snippet_node = result.select_one(
-                ".result__snippet"
-            )
+            snippet_node = result.select_one(".result__snippet")
 
             results.append(
                 {
@@ -177,12 +162,7 @@ class WebSearchClient:
         timeout_seconds: float = 12.0,
         max_retries: int = 2,
     ) -> None:
-        self.provider = (
-            provider
-            or DuckDuckGoProvider(
-                timeout_seconds=timeout_seconds
-            )
-        )
+        self.provider = provider or DuckDuckGoProvider(timeout_seconds=timeout_seconds)
 
         self.max_retries = max_retries
 
@@ -193,9 +173,7 @@ class WebSearchClient:
     ) -> list[RetrievedDocument]:
         last_error: Exception | None = None
 
-        for attempt in range(
-            self.max_retries + 1
-        ):
+        for attempt in range(self.max_retries + 1):
             try:
                 return await self.provider.search(
                     query=query,
@@ -218,6 +196,4 @@ class WebSearchClient:
                     },
                 )
 
-        raise SearchProviderError(
-            f"Search failed after {self.max_retries + 1} attempts"
-        ) from last_error
+        raise SearchProviderError(f"Search failed after {self.max_retries + 1} attempts") from last_error

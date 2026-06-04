@@ -89,9 +89,10 @@ async def execute_research_job(query_id: str, *, max_sources: int, max_depth: in
             RETRIEVAL_COUNT.inc(len(documents))
             await redis.publish_execution_update(query_id, {"status": "completed"})
         except Exception as exc:
-            await repository.add_task(query_id=query_id, task_type="workflow", status="failed", logs={"error": str(exc)})
+            await repository.add_task(
+                query_id=query_id, task_type="workflow", status="failed", logs={"error": str(exc)}
+            )
             await repository.update_status(query_id, "failed")
             await session.commit()
             RESEARCH_RUNS.labels(status="failed").inc()
             await redis.publish_execution_update(query_id, {"status": "failed", "error": str(exc)})
-

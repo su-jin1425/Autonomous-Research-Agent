@@ -8,7 +8,6 @@ from passlib.context import CryptContext
 
 from app.core.config import get_settings
 
-
 ALGORITHM = "HS256"
 ISSUER = "autonomous-research-agent"
 
@@ -116,16 +115,12 @@ def decode_token(token: str) -> dict[str, Any]:
             "access",
             "refresh",
         }:
-            raise ValueError(
-                "Invalid token type"
-            )
+            raise ValueError("Invalid token type")
 
         return payload
 
     except JWTError as exc:
-        raise ValueError(
-            "Invalid authentication token"
-        ) from exc
+        raise ValueError("Invalid authentication token") from exc
 
 
 def decode_access_token(
@@ -134,9 +129,7 @@ def decode_access_token(
     payload = decode_token(token)
 
     if payload.get("type") != "access":
-        raise ValueError(
-            "Expected access token"
-        )
+        raise ValueError("Expected access token")
 
     return payload
 
@@ -147,8 +140,6 @@ def decode_refresh_token(
     payload = decode_token(token)
 
     if payload.get("type") != "refresh":
-        raise ValueError(
-            "Expected refresh token"
-        )
+        raise ValueError("Expected refresh token")
 
     return payload

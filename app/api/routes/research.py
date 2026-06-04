@@ -8,7 +8,6 @@ from app.schemas.research import ResearchDetailResponse, ResearchQueryResponse, 
 from app.services.research_service import ResearchNotFoundError, ResearchService, execute_research_job
 from app.tasks import run_research
 
-
 router = APIRouter(prefix="/research", tags=["research"])
 
 
@@ -81,4 +80,3 @@ async def delete_research(
         await ResearchService(session).delete(query_id=query_id, user_id=user.id)
     except ResearchNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-

@@ -4,7 +4,6 @@ from typing import Any
 from app.core.config import get_settings
 from app.services.research_service import execute_research_job
 
-
 settings = get_settings()
 
 try:

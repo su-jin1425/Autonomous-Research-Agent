@@ -18,7 +18,6 @@ from app.core.logging import configure_logging
 from app.db.session import engine, init_db
 from app.middleware.rate_limit import RateLimitMiddleware
 
-
 APP_VERSION = "0.2.0"
 
 

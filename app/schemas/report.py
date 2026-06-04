@@ -12,4 +12,3 @@ class ReportExportResponse(BaseModel):
     report_id: str
     format: str
     content: dict[str, Any] | str
-

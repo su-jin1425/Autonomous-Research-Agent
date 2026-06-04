@@ -11,7 +11,6 @@ from app.repositories.research_repository import ResearchRepository
 from app.schemas.monitoring import HealthResponse, MetricsResponse
 from app.services.redis_service import RedisService
 
-
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
 

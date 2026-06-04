@@ -18,4 +18,3 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     research_queries = relationship("ResearchQuery", back_populates="user", cascade="all, delete-orphan")
-

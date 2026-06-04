@@ -12,4 +12,3 @@ class HtmlContentExtractor:
         if len(text) < 200:
             text = soup.get_text("\n", strip=True)
         return title, "\n".join(line for line in text.splitlines() if line.strip())
-

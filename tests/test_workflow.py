@@ -18,10 +18,7 @@ class FakeSearchClient:
             RetrievedDocument(
                 url=f"https://example.com/{query.replace(' ', '-')}",
                 title=f"Result for {query}",
-                content=(
-                    "FastAPI LangGraph Redis PostgreSQL "
-                    "vector search research automation evidence."
-                ),
+                content=("FastAPI LangGraph Redis PostgreSQL vector search research automation evidence."),
                 score=0.9,
             )
         ]
@@ -53,13 +50,7 @@ class FakeBrowser:
         return RetrievedDocument(
             url=url,
             title="Fetched page",
-            content=" ".join(
-                [
-                    "FastAPI LangGraph Redis PostgreSQL vector search "
-                    "research automation evidence"
-                ]
-                * 80
-            ),
+            content=" ".join(["FastAPI LangGraph Redis PostgreSQL vector search research automation evidence"] * 80),
             score=0.9,
         )
 
@@ -69,9 +60,7 @@ class FailingBrowser:
         self,
         url: str,
     ) -> RetrievedDocument:
-        raise BrowserNavigationError(
-            "navigation failed"
-        )
+        raise BrowserNavigationError("navigation failed")
 
 
 @pytest.mark.asyncio
@@ -93,10 +82,7 @@ async def test_research_workflow_generates_validated_report():
 
     assert state["indexed_chunk_ids"]
     assert state["report"]["executive_summary"]
-    assert (
-        state["report"]["validation"]["citation_count"]
-        >= 1
-    )
+    assert state["report"]["validation"]["citation_count"] >= 1
 
 
 @pytest.mark.asyncio

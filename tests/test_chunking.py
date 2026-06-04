@@ -16,4 +16,3 @@ def test_chunker_creates_stable_metadata() -> None:
     assert chunks[0].metadata["url"] == document.url
     assert chunks[0].metadata["title"] == document.title
     assert chunks[0].id != chunks[1].id
-

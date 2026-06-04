@@ -99,11 +99,7 @@ class SourceValidator:
 
         lowered = content.lower()
 
-        penalty_count = sum(
-            1
-            for indicator in self.LOW_TRUST_INDICATORS
-            if indicator in lowered
-        )
+        penalty_count = sum(1 for indicator in self.LOW_TRUST_INDICATORS if indicator in lowered)
 
         score -= min(penalty_count * 0.05, 0.15)
 

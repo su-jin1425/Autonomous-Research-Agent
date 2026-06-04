@@ -35,4 +35,3 @@ class EmbeddingProvider:
             vector[bucket] += sign
         norm = sqrt(sum(value * value for value in vector)) or 1.0
         return [value / norm for value in vector]
-

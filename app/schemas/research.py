@@ -3,7 +3,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 ResearchStatus = Literal["queued", "running", "completed", "failed", "cancelled"]
 
 
@@ -45,4 +44,3 @@ class ResearchQueryResponse(BaseModel):
 class ResearchDetailResponse(ResearchQueryResponse):
     sources: list[ResearchSourceResponse] = []
     report: ResearchReportResponse | None = None
-

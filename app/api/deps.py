@@ -10,7 +10,6 @@ from app.db.session import get_session
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 
-
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_v1_prefix}/auth/login")
 
@@ -50,4 +49,3 @@ def require_roles(*roles: str):
         return user
 
     return _dependency
-

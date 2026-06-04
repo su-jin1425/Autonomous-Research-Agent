@@ -14,7 +14,6 @@ from app.services.knowledge_base import KnowledgeBaseService
 from app.services.source_validation import SourceValidator
 from app.workflows.state import ResearchState
 
-
 logger = logging.getLogger(__name__)
 
 GraphNode = Callable[[ResearchState], Awaitable[ResearchState]]
@@ -143,7 +142,8 @@ class ResearchWorkflow:
 
         limit_per_task = max(
             1,
-            state["max_sources"] // max(
+            state["max_sources"]
+            // max(
                 1,
                 len(search_tasks),
             ),
@@ -178,9 +178,7 @@ class ResearchWorkflow:
                 seen_urls.add(document.url)
                 results.append(document)
 
-        state["search_results"] = results[
-            : state["max_sources"]
-        ]
+        state["search_results"] = results[: state["max_sources"]]
 
         return state
 
@@ -226,16 +224,12 @@ class ResearchWorkflow:
                 state.setdefault(
                     "errors",
                     [],
-                ).append(
-                    f"{result.url}: {exc}"
-                )
+                ).append(f"{result.url}: {exc}")
 
                 documents.append(result)
 
         for document in documents:
-            document.score = self.validator.score(
-                document
-            )
+            document.score = self.validator.score(document)
 
         state["browsed_documents"] = sorted(
             documents,
@@ -254,17 +248,11 @@ class ResearchWorkflow:
             [],
         )
 
-        state["indexed_chunk_ids"] = (
-            await self.knowledge_base.index_documents(
-                documents
-            )
-        )
+        state["indexed_chunk_ids"] = await self.knowledge_base.index_documents(documents)
 
-        state["evidence"] = (
-            await self.knowledge_base.semantic_search(
-                state["query"],
-                limit=8,
-            )
+        state["evidence"] = await self.knowledge_base.semantic_search(
+            state["query"],
+            limit=8,
         )
 
         return state
@@ -291,14 +279,10 @@ class ResearchWorkflow:
         knowledge_gaps: list[str] = []
 
         if len(evidence) < 3:
-            knowledge_gaps.append(
-                "Insufficient supporting evidence"
-            )
+            knowledge_gaps.append("Insufficient supporting evidence")
 
         if not evidence:
-            knowledge_gaps.append(
-                "No semantically relevant evidence found"
-            )
+            knowledge_gaps.append("No semantically relevant evidence found")
 
         state["knowledge_gaps"] = knowledge_gaps
 
@@ -316,14 +300,12 @@ class ResearchWorkflow:
         self,
         state: ResearchState,
     ) -> ResearchState:
-        state["report"] = (
-            await self.reasoning_agent.synthesize(
-                query=state["query"],
-                evidence=state.get(
-                    "evidence",
-                    [],
-                ),
-            )
+        state["report"] = await self.reasoning_agent.synthesize(
+            query=state["query"],
+            evidence=state.get(
+                "evidence",
+                [],
+            ),
         )
 
         return state
@@ -343,9 +325,7 @@ class ResearchWorkflow:
         )
 
         report["validation"] = {
-            "citation_count": len(
-                citations
-            ),
+            "citation_count": len(citations),
             "source_count": len(
                 state.get(
                     "browsed_documents",
@@ -374,14 +354,7 @@ class ResearchWorkflow:
                 "errors",
                 [],
             ),
-            "status": (
-                "needs_review"
-                if (
-                    not citations
-                    or state.get("errors")
-                )
-                else "validated_with_sources"
-            ),
+            "status": ("needs_review" if (not citations or state.get("errors")) else "validated_with_sources"),
         }
 
         state["report"] = report

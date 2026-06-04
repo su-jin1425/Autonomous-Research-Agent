@@ -18,4 +18,3 @@ async def test_in_memory_vector_store_returns_semantic_hit() -> None:
     hits = await store.search(embeddings.embed(["fastapi redis research"])[0], limit=1)
 
     assert hits[0].id == "a"
-

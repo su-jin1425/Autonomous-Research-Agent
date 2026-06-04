@@ -10,12 +10,11 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.services.auth_service import (
-    AuthService,
     AuthenticationError,
+    AuthService,
     DuplicateUserError,
     RegistrationError,
 )
-
 
 router = APIRouter(
     prefix="/auth",
@@ -100,8 +99,5 @@ async def refresh_token() -> dict[str, str]:
 async def logout() -> dict[str, str]:
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail=(
-            "Logout is not yet implemented. "
-            "Version 2 will introduce refresh-token revocation."
-        ),
+        detail=("Logout is not yet implemented. Version 2 will introduce refresh-token revocation."),
     )

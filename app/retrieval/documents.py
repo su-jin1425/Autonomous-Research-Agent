@@ -15,4 +15,3 @@ class DocumentChunk:
     id: str
     text: str
     metadata: dict[str, str | int | float]
-

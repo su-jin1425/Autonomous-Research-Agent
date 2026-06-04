@@ -73,9 +73,7 @@ class RedisService:
         if client is None:
             return 0
 
-        return int(
-            await client.llen(queue_name)
-        )
+        return int(await client.llen(queue_name))
 
     async def subscribe(
         self,

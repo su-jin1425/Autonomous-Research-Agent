@@ -10,7 +10,6 @@ from app.core.config import get_settings
 from app.retrieval.documents import RetrievedDocument
 from app.retrieval.extractor import HtmlContentExtractor
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -76,18 +75,14 @@ class PlaywrightBrowser:
                 )
 
                 if response is None:
-                    raise BrowserNavigationError(
-                        f"No response received while loading '{url}'"
-                    )
+                    raise BrowserNavigationError(f"No response received while loading '{url}'")
 
                 final_url = page.url
 
                 self._validate_url(final_url)
 
                 if response.status >= 400:
-                    raise BrowserNavigationError(
-                        f"Failed to load '{final_url}' with status code {response.status}"
-                    )
+                    raise BrowserNavigationError(f"Failed to load '{final_url}' with status code {response.status}")
 
                 html = await page.content()
 
@@ -116,9 +111,7 @@ class PlaywrightBrowser:
                     "Browser navigation failed",
                     extra={"url": url},
                 )
-                raise BrowserNavigationError(
-                    f"Failed to navigate to '{url}'"
-                ) from exc
+                raise BrowserNavigationError(f"Failed to navigate to '{url}'") from exc
 
             finally:
                 await context.close()
@@ -127,21 +120,15 @@ class PlaywrightBrowser:
         parsed = urlparse(url)
 
         if parsed.scheme not in {"http", "https"}:
-            raise BrowserNavigationError(
-                f"Unsupported URL scheme '{parsed.scheme}'"
-            )
+            raise BrowserNavigationError(f"Unsupported URL scheme '{parsed.scheme}'")
 
         if not parsed.hostname:
-            raise BrowserNavigationError(
-                "URL does not contain a valid hostname"
-            )
+            raise BrowserNavigationError("URL does not contain a valid hostname")
 
         host = parsed.hostname.lower()
 
         if host in self.BLOCKED_HOSTS:
-            raise BrowserNavigationError(
-                f"Blocked host '{host}'"
-            )
+            raise BrowserNavigationError(f"Blocked host '{host}'")
 
         self._validate_host_resolution(host)
 
@@ -153,9 +140,7 @@ class PlaywrightBrowser:
                 proto=socket.IPPROTO_TCP,
             )
         except socket.gaierror as exc:
-            raise BrowserNavigationError(
-                f"Unable to resolve host '{host}'"
-            ) from exc
+            raise BrowserNavigationError(f"Unable to resolve host '{host}'") from exc
 
         for entry in addresses:
             ip = entry[4][0]
@@ -172,6 +157,4 @@ class PlaywrightBrowser:
                 or ip_obj.is_reserved
                 or ip_obj.is_multicast
             ):
-                raise BrowserNavigationError(
-                    f"Blocked private or reserved address '{ip}'"
-                )
+                raise BrowserNavigationError(f"Blocked private or reserved address '{ip}'")
