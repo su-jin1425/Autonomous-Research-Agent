@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from collections.abc import Awaitable, Callable
 
+from app.agents.planner import ResearchPlanner
 from app.agents.reasoning import ReasoningAgent
 from app.core.config import get_settings
 from app.retrieval.browser import BrowserNavigationError, PlaywrightBrowser
@@ -27,13 +27,18 @@ class ResearchWorkflow:
         browser: PlaywrightBrowser | None = None,
         knowledge_base: KnowledgeBaseService | None = None,
         reasoning_agent: ReasoningAgent | None = None,
+        planner: ResearchPlanner | None = None,
     ) -> None:
         self.settings = get_settings()
+
         self.search_client = search_client or WebSearchClient()
         self.browser = browser or PlaywrightBrowser()
         self.knowledge_base = knowledge_base or KnowledgeBaseService()
         self.reasoning_agent = reasoning_agent or ReasoningAgent()
+        self.planner = planner or ResearchPlanner()
+
         self.validator = SourceValidator()
+
         self._compiled_graph = self._build_langgraph()
 
     async def run(
@@ -48,6 +53,9 @@ class ResearchWorkflow:
             "max_sources": max_sources or self.settings.research_max_sources,
             "max_depth": max_depth or self.settings.research_max_depth,
             "errors": [],
+            "research_iterations": 0,
+            "confidence_score": 0.0,
+            "knowledge_gaps": [],
         }
 
         if self._compiled_graph is not None:
@@ -63,19 +71,21 @@ class ResearchWorkflow:
 
         graph = StateGraph(ResearchState)
 
-        graph.add_node("decompose", self.decompose_query)
+        graph.add_node("plan", self.plan_research)
         graph.add_node("search", self.search_web)
         graph.add_node("browse", self.browse_sources)
         graph.add_node("index", self.index_documents)
+        graph.add_node("evaluate", self.evaluate_evidence)
         graph.add_node("reason", self.reason_over_evidence)
         graph.add_node("validate", self.validate_report)
 
-        graph.set_entry_point("decompose")
+        graph.set_entry_point("plan")
 
-        graph.add_edge("decompose", "search")
+        graph.add_edge("plan", "search")
         graph.add_edge("search", "browse")
         graph.add_edge("browse", "index")
-        graph.add_edge("index", "reason")
+        graph.add_edge("index", "evaluate")
+        graph.add_edge("evaluate", "reason")
         graph.add_edge("reason", "validate")
         graph.add_edge("validate", END)
 
@@ -86,10 +96,11 @@ class ResearchWorkflow:
         state: ResearchState,
     ) -> ResearchState:
         for node in [
-            self.decompose_query,
+            self.plan_research,
             self.search_web,
             self.browse_sources,
             self.index_documents,
+            self.evaluate_evidence,
             self.reason_over_evidence,
             self.validate_report,
         ]:
@@ -97,84 +108,45 @@ class ResearchWorkflow:
 
         return state
 
-    async def decompose_query(
+    async def plan_research(
         self,
         state: ResearchState,
     ) -> ResearchState:
-        query = state["query"].strip()
-
-        search_tasks = self._build_research_plan(
-            query=query,
+        plan = await self.planner.create_plan(
+            query=state["query"],
             max_depth=state["max_depth"],
         )
 
-        state["search_tasks"] = search_tasks
+        state["research_plan"] = plan
+        state["sub_questions"] = plan.get(
+            "sub_questions",
+            [],
+        )
+        state["search_tasks"] = plan.get(
+            "search_tasks",
+            [],
+        )
 
         return state
-
-    def _build_research_plan(
-        self,
-        *,
-        query: str,
-        max_depth: int,
-    ) -> list[str]:
-        normalized = re.sub(r"\s+", " ", query).strip()
-
-        candidates = [
-            normalized,
-            f"{normalized} overview",
-            f"{normalized} latest research",
-            f"{normalized} evidence",
-            f"{normalized} industry analysis",
-            f"{normalized} risks",
-            f"{normalized} opportunities",
-            f"{normalized} best practices",
-        ]
-
-        if any(
-            keyword in normalized.lower()
-            for keyword in {
-                "ai",
-                "llm",
-                "machine learning",
-                "agent",
-                "automation",
-            }
-        ):
-            candidates.extend(
-                [
-                    f"{normalized} architecture",
-                    f"{normalized} implementation patterns",
-                    f"{normalized} production deployment",
-                ]
-            )
-
-        unique_tasks: list[str] = []
-        seen: set[str] = set()
-
-        for task in candidates:
-            normalized_task = task.lower().strip()
-
-            if normalized_task in seen:
-                continue
-
-            seen.add(normalized_task)
-            unique_tasks.append(task)
-
-        return unique_tasks[: max(max_depth * 3, 3)]
 
     async def search_web(
         self,
         state: ResearchState,
     ) -> ResearchState:
-        search_tasks = state.get("search_tasks", [])
+        search_tasks = state.get(
+            "search_tasks",
+            [],
+        )
 
         if not search_tasks:
             return state
 
         limit_per_task = max(
             1,
-            state["max_sources"] // max(1, len(search_tasks)),
+            state["max_sources"] // max(
+                1,
+                len(search_tasks),
+            ),
         )
 
         batches = await asyncio.gather(
@@ -193,7 +165,10 @@ class ResearchWorkflow:
 
         for batch in batches:
             if isinstance(batch, Exception):
-                state.setdefault("errors", []).append(str(batch))
+                state.setdefault(
+                    "errors",
+                    [],
+                ).append(str(batch))
                 continue
 
             for document in batch:
@@ -203,7 +178,9 @@ class ResearchWorkflow:
                 seen_urls.add(document.url)
                 results.append(document)
 
-        state["search_results"] = results[: state["max_sources"]]
+        state["search_results"] = results[
+            : state["max_sources"]
+        ]
 
         return state
 
@@ -213,34 +190,52 @@ class ResearchWorkflow:
     ) -> ResearchState:
         documents: list[RetrievedDocument] = []
 
-        for result in state.get("search_results", []):
+        for result in state.get(
+            "search_results",
+            [],
+        ):
             try:
-                page = await self.browser.fetch(result.url)
+                page = await self.browser.fetch(
+                    result.url,
+                )
 
                 page.score = result.score
 
-                page.metadata.update(result.metadata)
+                page.metadata.update(
+                    result.metadata,
+                )
 
                 documents.append(page)
 
             except BrowserNavigationError as exc:
-                state.setdefault("errors", []).append(str(exc))
+                state.setdefault(
+                    "errors",
+                    [],
+                ).append(str(exc))
+
                 documents.append(result)
 
             except Exception as exc:
                 logger.exception(
                     "Unexpected browse failure",
-                    extra={"url": result.url},
+                    extra={
+                        "url": result.url,
+                    },
                 )
 
-                state.setdefault("errors", []).append(
+                state.setdefault(
+                    "errors",
+                    [],
+                ).append(
                     f"{result.url}: {exc}"
                 )
 
                 documents.append(result)
 
         for document in documents:
-            document.score = self.validator.score(document)
+            document.score = self.validator.score(
+                document
+            )
 
         state["browsed_documents"] = sorted(
             documents,
@@ -261,7 +256,7 @@ class ResearchWorkflow:
 
         state["indexed_chunk_ids"] = (
             await self.knowledge_base.index_documents(
-                documents,
+                documents
             )
         )
 
@@ -270,6 +265,49 @@ class ResearchWorkflow:
                 state["query"],
                 limit=8,
             )
+        )
+
+        return state
+
+    async def evaluate_evidence(
+        self,
+        state: ResearchState,
+    ) -> ResearchState:
+        evidence = state.get(
+            "evidence",
+            [],
+        )
+
+        confidence = min(
+            len(evidence) / 8.0,
+            1.0,
+        )
+
+        state["confidence_score"] = round(
+            confidence,
+            4,
+        )
+
+        knowledge_gaps: list[str] = []
+
+        if len(evidence) < 3:
+            knowledge_gaps.append(
+                "Insufficient supporting evidence"
+            )
+
+        if not evidence:
+            knowledge_gaps.append(
+                "No semantically relevant evidence found"
+            )
+
+        state["knowledge_gaps"] = knowledge_gaps
+
+        state["research_iterations"] = (
+            state.get(
+                "research_iterations",
+                0,
+            )
+            + 1
         )
 
         return state
@@ -294,7 +332,10 @@ class ResearchWorkflow:
         self,
         state: ResearchState,
     ) -> ResearchState:
-        report = state.get("report", {})
+        report = state.get(
+            "report",
+            {},
+        )
 
         citations = report.get(
             "citations",
@@ -302,7 +343,9 @@ class ResearchWorkflow:
         )
 
         report["validation"] = {
-            "citation_count": len(citations),
+            "citation_count": len(
+                citations
+            ),
             "source_count": len(
                 state.get(
                     "browsed_documents",
@@ -315,13 +358,28 @@ class ResearchWorkflow:
                     [],
                 )
             ),
+            "confidence_score": state.get(
+                "confidence_score",
+                0.0,
+            ),
+            "knowledge_gaps": state.get(
+                "knowledge_gaps",
+                [],
+            ),
+            "research_iterations": state.get(
+                "research_iterations",
+                0,
+            ),
             "errors": state.get(
                 "errors",
                 [],
             ),
             "status": (
                 "needs_review"
-                if not citations or state.get("errors")
+                if (
+                    not citations
+                    or state.get("errors")
+                )
                 else "validated_with_sources"
             ),
         }
