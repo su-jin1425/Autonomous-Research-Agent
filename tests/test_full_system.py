@@ -1,9 +1,16 @@
+import asyncio
 import time
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.db.session import init_db
 from app.main import app
+
+
+@pytest.fixture(scope="session", autouse=True)
+def initialize_database():
+    asyncio.run(init_db())
 
 
 @pytest.fixture
