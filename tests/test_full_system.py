@@ -5,11 +5,15 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+
+@pytest.fixture
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
 
 
-@pytest.fixture(scope="session")
-def auth_headers():
+@pytest.fixture
+def auth_headers(client):
     register_payload = {
         "name": "Test User",
         "email": f"test_{int(time.time())}@example.com",
@@ -37,26 +41,41 @@ def auth_headers():
     token = login_response.json()["access_token"]
 
     return {
-        "Authorization": f"Bearer {token}"
+        "Authorization": f"Bearer {token}",
     }
 
 
-def test_root():
+def test_root(client):
     response = client.get("/")
+
     assert response.status_code == 200
 
+    data = response.json()
 
-def test_liveness():
+    assert data["status"] == "running"
+
+
+def test_liveness(client):
     response = client.get("/health/live")
+
     assert response.status_code == 200
 
+    data = response.json()
 
-def test_readiness():
+    assert data["status"] == "alive"
+
+
+def test_readiness(client):
     response = client.get("/health/ready")
+
     assert response.status_code == 200
 
+    data = response.json()
 
-def test_auth_me(auth_headers):
+    assert "status" in data
+
+
+def test_auth_me(client, auth_headers):
     response = client.get(
         "/api/v1/auth/me",
         headers=auth_headers,
@@ -65,7 +84,7 @@ def test_auth_me(auth_headers):
     assert response.status_code == 200
 
 
-def test_monitoring_health(auth_headers):
+def test_monitoring_health(client, auth_headers):
     response = client.get(
         "/api/v1/monitoring/health",
         headers=auth_headers,
@@ -74,7 +93,7 @@ def test_monitoring_health(auth_headers):
     assert response.status_code == 200
 
 
-def test_monitoring_metrics():
+def test_monitoring_metrics(client):
     response = client.get(
         "/api/v1/monitoring/metrics",
     )
@@ -82,7 +101,7 @@ def test_monitoring_metrics():
     assert response.status_code == 200
 
 
-def test_retrieval_search(auth_headers):
+def test_retrieval_search(client, auth_headers):
     response = client.post(
         "/api/v1/retrieval/search",
         headers=auth_headers,
@@ -95,7 +114,7 @@ def test_retrieval_search(auth_headers):
     assert response.status_code == 200
 
 
-def test_research_workflow(auth_headers):
+def test_research_workflow(client, auth_headers):
     start_response = client.post(
         "/api/v1/research/start",
         headers=auth_headers,
@@ -110,6 +129,7 @@ def test_research_workflow(auth_headers):
     assert start_response.status_code in [200, 202]
 
     research = start_response.json()
+
     query_id = research["id"]
 
     status_response = client.get(
@@ -128,8 +148,10 @@ def test_research_workflow(auth_headers):
 
     detail = detail_response.json()
 
-    if detail.get("report"):
-        report_id = detail["report"]["id"]
+    report = detail.get("report")
+
+    if report:
+        report_id = report["id"]
 
         report_response = client.get(
             f"/api/v1/reports/{report_id}",
@@ -157,7 +179,7 @@ def test_research_workflow(auth_headers):
     assert delete_response.status_code in [200, 204]
 
 
-def test_validation_errors():
+def test_validation_errors(client):
     response = client.post(
         "/api/v1/auth/register",
         json={},
