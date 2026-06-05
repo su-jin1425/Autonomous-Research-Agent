@@ -7,7 +7,8 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ.setdefault("ENVIRONMENT", "test")
+# Force test configuration and override .env values
+os.environ["ENVIRONMENT"] = "test"
 
 from app.db.session import AsyncSessionLocal, init_db
 from app.main import app

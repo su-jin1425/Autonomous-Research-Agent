@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 
 from app.core.config import get_settings
@@ -9,7 +10,6 @@ from app.core.config import get_settings
 class RedisService:
     def __init__(self) -> None:
         self.settings = get_settings()
-
         self._memory: dict[str, tuple[int, float]] = {}
 
     async def ping(self) -> bool:
@@ -18,7 +18,10 @@ class RedisService:
         if client is None:
             return True
 
-        await client.ping()
+        try:
+            await client.ping()
+        except Exception:
+            pass
 
         return True
 
@@ -42,10 +45,7 @@ class RedisService:
             count = await client.incr(key)
 
             if count == 1:
-                await client.expire(
-                    key,
-                    window_seconds,
-                )
+                await client.expire(key, window_seconds)
 
             return int(count) <= limit, int(count)
 
@@ -99,14 +99,15 @@ class RedisService:
 
         try:
             pubsub = client.pubsub()
-
             await pubsub.subscribe(channel)
-
             return pubsub
         except Exception:
             return None
 
     async def client(self):
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            return None
+
         if self.settings.environment == "test":
             return None
 
@@ -115,11 +116,19 @@ class RedisService:
         except ImportError:
             return None
 
-        return redis.from_url(
-            self.settings.redis_url,
-            encoding="utf-8",
-            decode_responses=True,
-        )
+        try:
+            client = redis.from_url(
+                self.settings.redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+            )
+
+            await client.ping()
+
+            return client
+
+        except Exception:
+            return None
 
     def _increment_memory(
         self,

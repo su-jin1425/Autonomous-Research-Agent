@@ -32,6 +32,10 @@ async def test_redis_service_falls_back_to_memory_for_rate_limits() -> None:
 async def test_redis_service_gracefully_handles_missing_client() -> None:
     service = RedisService()
 
+    print("ENV:", service.settings.environment)
+    print("REDIS_URL:", service.settings.redis_url)
+    print("CLIENT:", await service.client())
+
     assert await service.ping() is True
     assert await service.queue_size() == 0
     assert await service.subscribe("research:test") is None
