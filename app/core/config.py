@@ -50,7 +50,7 @@ class Settings(BaseSettings):
 
     llm_model: str = "gpt-4o-mini"
 
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6"
 
     cors_origins: list[str] = [
         "http://localhost:3000",

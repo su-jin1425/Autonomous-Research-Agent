@@ -125,7 +125,7 @@ services:
       - research_network
 
   prometheus:
-    image: prom/prometheus:v2.55.1
+    image: prom/prometheus:2.55.1
 
     restart: unless-stopped
 
